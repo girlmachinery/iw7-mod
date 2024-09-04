@@ -41,14 +41,17 @@ namespace patches
 
 			name_dvar = game::Dvar_RegisterString("name", get_login_username().data(), game::DVAR_FLAG_SAVED, "Player name.");
 
-			if (game::environment::is_dedi())
+			/*if (game::environment::is_dedi())
 			{
 				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 85, 0, 100, game::DVAR_FLAG_NONE, "Cap frames per second");
 			}
 			else
 			{
 				com_maxfps = game::Dvar_RegisterInt("com_maxfps", 0, 0, 1000, game::DVAR_FLAG_SAVED, "Cap frames per second");
-			}
+			}*/
+
+			//cant be asked
+			com_maxfps = game::Dvar_RegisterInt("com_maxfps", 60, 60, 60, game::DVAR_FLAG_SAVED, "Cap frames per second");
 
 			*reinterpret_cast<game::dvar_t**>(0x146005758) = com_maxfps;
 			dvars::disable::re_register("com_maxfps");
