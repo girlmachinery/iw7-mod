@@ -7,6 +7,7 @@ namespace menu_structs {
 		std::string text;
 		std::function<void()> callback;
 		std::string type;//will be used later
+		bool bool_value;
 	};
 
 	struct menu {
@@ -20,4 +21,11 @@ namespace vars {
 	extern std::map<std::string, menu_structs::menu> menus;
 	extern std::map<std::string, int> menu_scrolls;
 	extern std::string current_menu;
+
+	extern float menu_x;
+	extern float menu_y;
+	extern float menu_width;
+	extern float menu_height;
+
+	extern bool test_bool;
 }

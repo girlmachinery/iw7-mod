@@ -19,6 +19,28 @@ namespace toybox {
 		}
 	}
 
+	void add_submenu_option(std::string menu_name, std::string text, std::function<void()> callback) {
+		//i know i could just do new_option.callback = [submenu_name]() { load_menu(submenu_name); } but i want to be able to do other stuff in the function
+		if (vars::menus.contains(menu_name)) {
+			menu_structs::menu_option new_option;
+			new_option.text = text;
+			new_option.callback = callback;
+			new_option.type = "submenu";
+			vars::menus.at(menu_name).options.push_back(new_option);
+		}
+	}
+
+	void add_bool_option(std::string menu_name, std::string text, bool& bool_value, std::function<void()> callback) {
+		if (vars::menus.contains(menu_name)) {
+			menu_structs::menu_option new_option;
+			new_option.text = text;
+			new_option.callback = callback;
+			new_option.bool_value = bool_value;
+			new_option.type = "bool";
+			vars::menus.at(menu_name).options.push_back(new_option);
+		}
+	}
+
 	void structure();
 
 	void load_menu(std::string menu_name) {
@@ -52,7 +74,8 @@ namespace toybox {
 		vars::menus.clear();
 
 		create_menu("main", "none");
-		add_option("main", "Submenu", []() { load_menu("sub"); });
+		add_submenu_option("main", "Sub Menu", []() { load_menu("sub"); });
+		add_bool_option("main", "Test Bool", vars::test_bool, []() { vars::test_bool = !vars::test_bool; });
 		for (int i = 1; i < 21; i++) {
 			add_option("main", "Option " + std::to_string(i), []() {});
 		}
@@ -102,6 +125,7 @@ namespace toybox {
 		
 		auto text_width = game::R_TextWidth(text.data(), std::numeric_limits<int>::max(), font);
 		auto text_height = font->pixelHeight;
+		y += text_height;//this makes shader and text drawing align
 		calculate_alignment(align, x, y, static_cast<float>(text_width), static_cast<float>(text_height));
 
 		game::R_AddCmdDrawText(text.data(), std::numeric_limits<int>::max(), font, x, y, 1.f, 1.f, 0.0f, game_color, style);
