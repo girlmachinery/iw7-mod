@@ -12,4 +12,6 @@ namespace vars {
 	float menu_height = 500;
 
 	bool test_bool = false;
+	int test_int = 5;
+	float test_float = 5.f;
 }

@@ -35,8 +35,36 @@ namespace toybox {
 			menu_structs::menu_option new_option;
 			new_option.text = text;
 			new_option.callback = callback;
-			new_option.bool_value = bool_value;
+			new_option.variable.bool_value = bool_value;
 			new_option.type = "bool";
+			vars::menus.at(menu_name).options.push_back(new_option);
+		}
+	}
+
+	void add_int_slider(std::string menu_name, std::string text, int* int_value, std::vector<int> min_max_step, std::function<void()> callback) {
+		if (vars::menus.contains(menu_name)) {
+			menu_structs::menu_option new_option;
+			new_option.text = text;
+			new_option.callback = callback;
+			new_option.slider_variable.int_value = int_value;
+			new_option.slider_variable.int_min = min_max_step[0];
+			new_option.slider_variable.int_max = min_max_step[1];
+			new_option.slider_variable.int_step = min_max_step[2];
+			new_option.type = "int_slider";
+			vars::menus.at(menu_name).options.push_back(new_option);
+		}
+	}
+
+	void add_float_slider(std::string menu_name, std::string text, float* float_value, std::vector<float> min_max_step, std::function<void()> callback) {
+		if (vars::menus.contains(menu_name)) {
+			menu_structs::menu_option new_option;
+			new_option.text = text;
+			new_option.callback = callback;
+			new_option.slider_variable.float_value = float_value;
+			new_option.slider_variable.float_min = min_max_step[0];
+			new_option.slider_variable.float_max = min_max_step[1];
+			new_option.slider_variable.float_step = min_max_step[2];
+			new_option.type = "float_slider";
 			vars::menus.at(menu_name).options.push_back(new_option);
 		}
 	}
@@ -76,6 +104,8 @@ namespace toybox {
 		create_menu("main", "none");
 		add_submenu_option("main", "Sub Menu", []() { load_menu("sub"); });
 		add_bool_option("main", "Test Bool", vars::test_bool, []() { vars::test_bool = !vars::test_bool; });
+		add_int_slider("main", "Test Int Slider", &vars::test_int, { 0, 10, 1 }, []() {});
+		add_float_slider("main", "Test Float Slider", &vars::test_float, { 0.f, 10.f, 0.5f }, []() {});
 		for (int i = 1; i < 21; i++) {
 			add_option("main", "Option " + std::to_string(i), []() {});
 		}

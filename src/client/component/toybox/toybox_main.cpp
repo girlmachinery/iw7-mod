@@ -2,6 +2,8 @@
 #include "loader/component_loader.hpp"
 #include "game/game.hpp"
 #include <utils/hook.hpp>
+#include <utils/io.hpp>
+#include <utils/thread.hpp>
 #include "component/scheduler.hpp"
 #include "toybox_utils.hpp"
 #include "toybox_vars.hpp"
@@ -12,7 +14,7 @@ namespace toybox {
 
 		if (option.type == "bool") {
 			std::vector<float> color;
-			if (option.bool_value) {
+			if (option.variable.bool_value) {
 				color = { 35, 35, 35, 255 };
 			}
 			else {
@@ -24,6 +26,25 @@ namespace toybox {
 		}
 		else if (option.type == "submenu") {
 			toybox::draw_text(">", "fonts/blender_pro_bold.ttf", { "right", "center" }, x + vars::menu_width - 22, y, 14.f, { 225, 225, 225, 255 }, game::FONT_STYLE_NONE);
+		}
+		else if (option.type == "int_slider") {
+			auto* value = option.slider_variable.int_value;
+			if (!value)
+				return;
+
+			std::string text = std::to_string(*value);
+			toybox::draw_text(text, "fonts/blender_pro_bold.ttf", { "right", "center" }, x + vars::menu_width - 20, y, 16.f, { 225, 225, 225, 255 }, game::FONT_STYLE_NONE);
+		}
+		else if (option.type == "float_slider") {
+			auto* value = option.slider_variable.float_value;
+			if (!value)
+				return;
+
+			std::string text = std::to_string(*value);
+			if (text.contains("."))
+				text = text.substr(0, text.find(".") + 3);
+
+			toybox::draw_text(text, "fonts/blender_pro_bold.ttf", { "right", "center" }, x + vars::menu_width - 20, y, 16.f, { 225, 225, 225, 255 }, game::FONT_STYLE_NONE);
 		}
 	}
 
@@ -57,15 +78,50 @@ namespace toybox {
 		//i hate math bruhhhhhhhhhhhhhhhh
 	}
 
-	int frames = 0;
-	void monitor_buttons() {
-		if (frames < 10)
-			return;
+	bool do_sliders(menu_structs::menu_option& option) {
+		//this whole thing sucks ass but i just wokeup
+		if (!option.type.contains("slider"))
+			return false;
 
+		if (!(toybox::key_pressed(game::K_DPAD_LEFT) || toybox::key_pressed(game::K_DPAD_RIGHT)))
+			return false;
+
+		bool left = toybox::key_pressed(game::K_DPAD_LEFT);
+		if (option.type == "int_slider") {
+			auto* value = option.slider_variable.int_value;
+			*value += left ? -option.slider_variable.int_step : option.slider_variable.int_step;
+
+			if (*value < option.slider_variable.int_min) {
+				*value = option.slider_variable.int_max;
+			}
+			else if (*value > option.slider_variable.int_max) {
+				*value = option.slider_variable.int_min;
+			}
+
+			return true;
+		}
+		else if (option.type == "float_slider") {
+			auto* value = option.slider_variable.float_value;
+			*value += left ? -option.slider_variable.float_step : option.slider_variable.float_step;
+
+			if (*value < option.slider_variable.float_min) {
+				*value = option.slider_variable.float_max;
+			}
+			else if (*value > option.slider_variable.float_max) {
+				*value = option.slider_variable.float_min;
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	void monitor_buttons() {
 		if (vars::current_menu == "none") {
 			if (toybox::key_pressed(game::K_BUTTON_LTRIG) && toybox::key_pressed(game::K_DPAD_UP)) {
 				toybox::load_menu("main");
-				frames = 0;
+				std::this_thread::sleep_for(150ms);
 			}
 
 			return;
@@ -84,39 +140,45 @@ namespace toybox {
 			else if (scroll >= size) {
 				scroll = 0;
 			}
+			std::this_thread::sleep_for(150ms);
+		}
 
-			frames = 0;
+		auto& option = menu.options[scroll];
+
+		if (do_sliders(option)) {
+			toybox::load_menu(vars::current_menu);//update variable drawing
+			std::this_thread::sleep_for(150ms);
 		}
 
 		if (toybox::key_pressed(game::K_BUTTON_X)) {
-			auto& option = menu.options[scroll];
 			option.callback();
 			toybox::load_menu(vars::current_menu);//update variable drawing
-			frames = 0;
+			std::this_thread::sleep_for(150ms);
 		}
 
 		if (toybox::key_pressed(game::K_BUTTON_RSTICK)) {
 			toybox::load_menu(menu.parent);
-			frames = 0;
+			std::this_thread::sleep_for(150ms);
 		}
 	}
 
 	void main_loop() {
-		monitor_buttons();
-
 		if (vars::current_menu != "none") {
 			draw_menu_hud();
 		}
-
-		frames++;
-		if (frames > 1000)
-			frames = 10;
 	}
 
-
+	std::thread buttons_thread;
 	class component final : public component_interface {
 	public:
 		void post_unpack() override {
+			//i know i could use scheduler async but i dont want to sleep other functions that use it
+			buttons_thread = std::thread([]() {
+				while (true) {
+					monitor_buttons();
+					std::this_thread::sleep_for(10ms);
+				}
+			});
 			scheduler::loop(main_loop, scheduler::pipeline::renderer);
 		}
 	};
